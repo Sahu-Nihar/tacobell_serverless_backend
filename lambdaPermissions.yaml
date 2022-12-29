@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Tacobell Lambda Permissions
+Resources:
+  getCartValuesLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Fn::ImportValue: 
+          Fn::Sub: ${StackName}-getCartValues
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/GET/cart/*"
+
+  addToCartLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: 
+        Fn::ImportValue: 
+          Fn::Sub: ${StackName}-addToCart
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestAPI}/*/POST/cart/*"
+
+Parameters:
+  RestAPI:
+    Type: String
+    Description: API Id 
+  StackName:
+    Type: String
+

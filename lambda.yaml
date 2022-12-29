@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Tacobell cart
+Globals: 
+  Function: 
+    Handler: index.handler
+    Runtime: nodejs14.x
+    Layers:
+    - Ref: CommonLayer
+    MemorySize: 3008
+    Timeout: 30
+    Tracing: Active
+    Environment:
+      Variables:
+        REGION:
+          Ref: AWSRegion
+Resources:
+  CommonLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName:
+        Fn::Sub: ${StackName}-CommonLayer
+      ContentUri: ./libraries/libraries.zip
+      CompatibleRuntimes: 
+        - nodejs14.x
+        - nodejs16.x
+
+  getCartValues:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${StackName}-getCartValues
+      Description: getCartValues Function
+      CodeUri: ./getCartValues
+      Role:
+        Ref: LambdaDeploymentRole
+      Tags:
+        Name:
+          Fn::Sub: ${StackName}-getCartValues
+    Metadata:
+      FinTag: getCartValues
+
+  addToCart:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: ${StackName}-addToCart
+      Description: addToCart Function
+      CodeUri: ./addToCart
+      Role:
+        Ref: LambdaDeploymentRole
+      Tags:
+        Name:
+          Fn::Sub: ${StackName}-addToCart
+    Metadata:
+      FinTag: addToCart
+
+Parameters:
+  StackName:
+    Type: String
+    Description: Stack Name (injected at deployment time)
+  APIGatewayStageName:
+    Type: String
+    Description: Environment name used for API Gateway Stage names
+  LambdaDeploymentRole:
+    Type: String
+    Description: Role used for Lambda functions in Sam deployment
+  AWSRegion:
+    Type: String
+    Description: Region
+
+Outputs:
+  getCartValuesArn:
+    Value: !GetAtt getCartValues.Arn
+    Export: 
+      Name: !Sub ${StackName}-getCartValues
+  addToCartArn:
+    Value: !GetAtt addToCart.Arn
+    Export: 
+      Name: !Sub ${StackName}-addToCart

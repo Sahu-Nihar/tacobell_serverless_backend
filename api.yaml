@@ -1,0 +1,83 @@
+paths:
+  /cart/{userid}:
+    get:
+      parameters: 
+      - name: "userid" 
+        in: "path" 
+        required: true 
+        type: "integer" 
+        format: "int64" 
+      description : "get cart items for a user via userId"
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Successfully retrieved cart details!!
+      
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        type: aws_proxy
+        uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdastack.Outputs.getCartValuesArn}/invocations
+    
+    post:
+      parameters: 
+      - name: "userid" 
+        in: "path" 
+        required: true 
+        type: "integer" 
+        format: "int64" 
+      - name: "request body" 
+        in: "body" 
+        required: true 
+        schema: 
+          "$ref": "#/definitions/User"
+      description : "add items in cart api"
+      consumes:
+        - application/json
+      responses:
+        '200':
+          description: "Successfully added user details"
+          
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        type: aws_proxy
+        uri: 
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdastack.Outputs.addToCartArn}/invocations
+        
+    options:
+      parameters: 
+      - name: "userid" 
+        in: "path" 
+        required: true 
+        type: "integer" 
+        format: "int64" 
+      description : "get/post cart items for given id"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      responses:
+        "200":
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST, GET, DELETE, PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "{}\n"
+        requestTemplates:
+          application/json: "{\n  \"statusCode\" : 200\n}\n"
+        passthroughBehavior: "when_no_match"
+        type: "mock"

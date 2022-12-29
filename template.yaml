@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Tacobell cart app
+
+Resources:
+  lambdastack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location : lambda.yaml
+      Parameters:
+        StackName: !Ref StackName
+        APIGatewayStageName: !Ref APIGatewayStageName
+        LambdaDeploymentRole: !Ref LambdaDeploymentRole
+        AWSRegion: !Ref AWSRegion
+
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Ref StackName
+      StageName: !Ref APIGatewayStageName
+      OpenApiVersion: '2.0'
+      Cors:
+        AllowMethods: "'POST, GET, DELETE, PUT'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+      DefinitionBody:
+        swagger: '2.0'
+        paths:
+          /cart/{userid}:
+            get:
+              parameters: 
+              - name: "userid" 
+                in: "path" 
+                required: true 
+                type: "integer" 
+                format: "int64" 
+              description : "get cart items for a user via userId"
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: Successfully retrieved cart details!!
+              
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: 
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdastack.Outputs.getCartValuesArn}/invocations
+            
+            post:
+              parameters: 
+              - name: "userid" 
+                in: "path" 
+                required: true 
+                type: "integer" 
+                format: "int64" 
+              description : "add items in cart api"
+              consumes:
+                - application/json
+              responses:
+                '200':
+                  description: "Successfully added user details"
+                  
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdastack.Outputs.addToCartArn}/invocations
+                
+            options:
+              parameters: 
+              - name: "userid"
+                in: "path"
+                required: true 
+                type: "integer" 
+                format: "int64" 
+              description : "get/post cart items for given id"
+              consumes:
+                - "application/json"
+              produces:
+                - "application/json"
+              responses:
+                "200":
+                  description: "200 response"
+                  headers:
+                    Access-Control-Allow-Headers:
+                      type: "string"
+                    Access-Control-Allow-Methods:
+                      type: "string"
+                    Access-Control-Allow-Origin:
+                      type: "string"
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Headers: "'*'"
+                      method.response.header.Access-Control-Allow-Methods: "'POST, GET, DELETE, PUT'"
+                      method.response.header.Access-Control-Allow-Origin: "'*'"
+                    responseTemplates:
+                      application/json: "{}\n"
+                requestTemplates:
+                  application/json: "{\n  \"statusCode\" : 200\n}\n"
+                passthroughBehavior: "when_no_match"
+                type: "mock"
+  
+  lambdapermissionsstack: 
+    Type: AWS::Serverless::Application 
+    DependsOn: Api 
+    Properties: 
+      Location : lambdaPermissions.yaml 
+      Parameters: 
+        RestAPI: !Ref Api 
+        StackName: !Ref StackName 
+
+Parameters:
+  StackName:
+    Type: String
+    Description: Stack Name (injected at deployment time)
+  APIGatewayStageName:
+    Type: String
+    Description: Environment name used for API Gateway Stage names
+  LambdaDeploymentRole:
+    Type: String
+    Description: Role used for Lambda functions in Sam deployment
+  AWSRegion:
+    Type: String
+    Description: Region
